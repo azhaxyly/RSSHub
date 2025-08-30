@@ -1,0 +1,20 @@
+# Ignore Windows-specific files
+Dockerfile
+[Dd]ockerfile*
+[Bb]in/
+[Oo]bj/
+**/*.exe
+**/*.bat
+
+# Ignore Git and IDE files
+.git
+.github/
+.vscode/
+.idea/
+
+# Ignore the binary we are building (to avoid copying it in if it exists on host)
+rsshub
+
+# Optional: Ignore go mod files if you want to always use the ones in the container
+# go.mod
+# go.sum

@@ -1,0 +1,37 @@
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: changem
+      POSTGRES_DB: rsshub
+    ports:
+      - '5432:5432'
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./migrations/create_articles_table.down.sql:/docker-entrypoint-initdb.d/01_create_articles_table.down.sql
+      - ./migrations/create_feeds_table.down.sql:/docker-entrypoint-initdb.d/02_create_feeds_table.down.sql
+      - ./migrations/create_feeds_table.up.sql:/docker-entrypoint-initdb.d/03_create_feeds_table.up.sql
+      - ./migrations/create_articles_table.up.sql:/docker-entrypoint-initdb.d/04_create_articles_table.up.sql
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres -d $$POSTGRES_DB']
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  rsshub:
+    build: .
+    env_file:
+      - .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      CLI_APP_TIMER_INTERVAL: ${CLI_APP_TIMER_INTERVAL}
+      CLI_APP_WORKERS_COUNT: ${CLI_APP_WORKERS_COUNT}
+      DATABASE_URL: ${DATABASE_URL}
+      LOG_LEVEL: ${LOG_LEVEL}
+    restart: unless-stopped
+
+volumes:
+  pgdata:
