@@ -7,46 +7,43 @@ import (
 )
 
 type Config struct {
-	DatabaseURL  string
-	TimeInterval time.Duration
-  NumWorkers int
-	DSN 				string
-	LogLevel     string
+	TimerInterval time.Duration
+	WorkersCount  int
+	PGHost        string
+	PGPort        string
+	PGUser        string
+	PGPassword    string
+	PGDBName      string
+	PGSSLmode     string
 }
 
 func LoadConfig() (*Config, error) {
-	timeInterval, err := time.ParseDuration(getOrDefault("TIME_INTERVAL", "3m"))
+	intervalStr := os.Getenv("CLI_APP_TIMER_INTERVAL")
+	if intervalStr == "" {
+		intervalStr = "3m" // Default
+	}
+	interval, err := time.ParseDuration(intervalStr)
+	if err != nil {
+		return nil, err
+	}
+
+	workersStr := os.Getenv("CLI_APP_WORKERS_COUNT")
+	if workersStr == "" {
+		workersStr = "3" // Default
+	}
+	workers, err := strconv.Atoi(workersStr)
 	if err != nil {
 		return nil, err
 	}
 
 	return &Config{
-		TimeInterval: timeInterval,
-		NumWorkers: getOrDefaultInt("NUM_WORKERS", 3),
-		DSN: getOrDefault("DATABASE_URL", "postgres://rsshub:rsshub@localhost:5432/rsshub?sslmode=disable"),
-		LogLevel:     getOrDefault("LOG_LEVEL", "development"),
+		TimerInterval: interval,
+		WorkersCount:  workers,
+		PGHost:        os.Getenv("POSTGRES_HOST"),
+		PGPort:        os.Getenv("POSTGRES_PORT"),
+		PGUser:        os.Getenv("POSTGRES_USER"),
+		PGPassword:    os.Getenv("POSTGRES_PASSWORD"),
+		PGDBName:      os.Getenv("POSTGRES_DBNAME"),
+		PGSSLmode:     "disable", // Default
 	}, nil
 }
-
-
-func getOrDefault(key string, def string) string {
-	val := os.Getenv(key)
-	if val == "" {
-		return def
-	}
-	return val
-}
-
-func getOrDefaultInt(key string, def int) int {
-	val := os.Getenv(key)
-	if val == "" {
-		return def
-	}
-	strc, err := strconv.Atoi(val)
-	if err != nil {
-		return def
-	}
-	return strc
-}
-
-

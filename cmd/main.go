@@ -5,67 +5,67 @@ import (
 	"log"
 	"os"
 
+	_ "github.com/lib/pq"
+
+	"rsshub/internal/adapters/db"
 	"rsshub/internal/adapters/handlers"
 	"rsshub/internal/config"
-	"rsshub/pkg/db/postgre"
 )
 
 func main() {
-	if len(os.Args) < 2 || os.Args[1] == "--help" {
-		PrintHelp()
-		os.Exit(0)
+	if len(os.Args) < 2 {
+		printHelp()
+		return
 	}
 
 	command := os.Args[1]
 
 	cfg, err := config.LoadConfig()
 	if err != nil {
-		log.Fatal("Error loading config:", err)
+		log.Fatalf("failed to load config: %v", err)
 	}
 
-	// logger.Init(cfg.LogLevel) Пока не требуется в CLI
-
-	db, err := postgre.NewPostgresDB(cfg)
+	database, err := db.NewDB(cfg)
 	if err != nil {
-		log.Fatal("Error connecting to database:", err)
+		fmt.Printf("Error connecting to database: %v\n", err)
+		os.Exit(1)
 	}
-	defer db.Close()
+	defer database.Close()
 
 	switch command {
-	case "add":
-		handlers.AddFeed()
-	case "set-interval":
-		handlers.SetInterval()
-	case "set-workers":
-		handlers.SetWorkers()
-	case "list":
-		handlers.ListFeeds()
-	case "delete":
-		handlers.DeleteFeed()
-	case "articles":
-		handlers.ShowArticles()
 	case "fetch":
-		handlers.StartFetching()
+		handler.HandleFetch(cfg, database)
+	case "add":
+		handler.HandleAdd(database)
+	case "list":
+		handler.HandleList(database)
+	case "delete":
+		handler.HandleDelete(database)
+	case "articles":
+		handler.HandleArticles(database)
+	case "set-interval":
+		handler.HandleSetInterval(cfg)
+	case "set-workers":
+		handler.HandleSetWorkers(cfg)
+	case "--help":
+		printHelp()
 	default:
-		fmt.Println("Unknown command:", command)
-		PrintHelp()
-		os.Exit(1)	
+		fmt.Printf("Unknown command: %s\n", command)
+		printHelp()
+		os.Exit(1)
 	}
 }
 
-func PrintHelp() {
-	fmt.Println(`
-	./rsshub --help
-
-  Usage:
-    rsshub COMMAND [OPTIONS]
+func printHelp() {
+	fmt.Println(`Usage:
+  rsshub COMMAND [OPTIONS]
 
   Common Commands:
-       add             add new RSS feed
-       set-interval    set RSS fetch interval
-       set-workers     set number of workers
-       list            list available RSS feeds
-       delete          delete RSS feed
-       articles        show latest articles
-       fetch           starts the background process that periodically fetches and processes RSS feeds using a worker pool`)
+     add             add new RSS feed
+     set-interval    set RSS fetch interval
+     set-workers     set number of workers
+     list            list available RSS feeds
+     delete          delete RSS feed
+     articles        show latest articles
+     fetch           starts the background process that periodically fetches and processes RSS feeds using a worker pool`)
 }
